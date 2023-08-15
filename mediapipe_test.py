@@ -1,15 +1,17 @@
 import cv2
 import mediapipe as mp
 import random
-
+import time
 
 radius=30
 RED=(0,0,255)
 score=0
 org=(30,30)
+time_org = (500,30)
 fontScale=1
 thickness=2
 font=cv2.FONT_HERSHEY_SIMPLEX
+countTime = 30 #30 seconds to go
 
 def find_quadrant(x,y):
     if x<=w and x>=w/2 and y>0 and y<h/2:
@@ -42,6 +44,7 @@ mp_drawing_styles = mp.solutions.drawing_styles  # mediapipe 繪圖樣式
 mp_hands = mp.solutions.hands                    # mediapipe 偵測手掌方法
 
 cap = cv2.VideoCapture(0)
+startTime = time.time()
 
 # mediapipe 啟用偵測手掌
 with mp_hands.Hands(
@@ -70,7 +73,7 @@ with mp_hands.Hands(
             run_rectangle= False    # 如果沒有碰到，就一直是 False ( 不會更換位置 )
             rx = random.randint(100,400)    # 隨機 x 座標
             ry = random.randint(100,300)   # 隨機 y 座標
-            print(rx, ry)
+            
             
         if run_circle:
             run_circle=False
@@ -100,10 +103,21 @@ with mp_hands.Hands(
                     mp_hands.HAND_CONNECTIONS,
                     mp_drawing_styles.get_default_hand_landmarks_style(),
                     mp_drawing_styles.get_default_hand_connections_style())
+        currentTime = time.time()
+        elapsedTime = currentTime - startTime
+        remainingTime = countTime - elapsedTime
+        
+
         cv2.circle(img, (rx_circle,ry_circle), radius, RED, thickness)
         cv2.rectangle(img,(rx,ry),(rx+80,ry+80),RED,5)   # 畫出觸碰區
         text=f'Score:{score}'
         img=cv2.putText(img,text,org,font,fontScale,RED,thickness,cv2.LINE_AA)
+
+        if remainingTime >= 0.0:
+            img=cv2.putText(img,"T:{:.2f}".format(remainingTime),time_org,font,fontScale,RED,thickness,cv2.LINE_AA)
+        else:
+            img=cv2.putText(img,"T: End",time_org,font,fontScale,RED,thickness,cv2.LINE_AA)
+
         cv2.imshow('Mediapipe_Game', img)
         if cv2.waitKey(5) == ord('q'):
             break    # 按下 q 鍵停止
