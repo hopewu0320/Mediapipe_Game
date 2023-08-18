@@ -7,7 +7,7 @@ python mediapipe_test.py
 ```
 # Introdiction
 - ### MediaPipe is a cross-platform framework, created by Google, for building multimodal applied machine learning pipelines
-- ### We takes square and circle,which can get 10 and 30 points,respectively.
+- ### Touch square and circle,which can get 10 and 30 points,respectively.
 - ### Countdown from 30 seconds
 # SubModule
 
