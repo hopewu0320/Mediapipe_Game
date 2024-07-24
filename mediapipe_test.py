@@ -12,55 +12,85 @@ time_org = (500, 30)
 fontScale = 1
 thickness = 2
 font = cv2.FONT_HERSHEY_SIMPLEX
-countTime = 30  # 30 seconds to go
+countTime = 300  # 30 seconds to go
+
+First_Generate  = True
 
 def find_quadrant(x, y):
-    if x <= w and x >= w / 2 and y > 0 and y < h / 2:
+    if x >= w / 2 and y < h / 2:
         quadrant = "first"
-    elif x < w / 2 and x > 0 and y >= 0 and y <= h / 2:
+    elif x < w / 2 and y < h / 2:
         quadrant = "second"
-    elif x < w / 2 and x > 0 and y > h / 2 and y < h:
+    elif x < w / 2 and y >= h / 2:
         quadrant = "third"
-    elif x < w and x > w / 2 and y > h / 2 and y < h:
+    elif x >= w / 2 and y >= h / 2:
         quadrant = "fourth"
     return quadrant
 
-def circle_position(rx, ry):
-    '''
-    Input:
-    rx: 正方形x座標
-    ry: 正方形x座標
-    Output:
-    rx_circle: 圓形x座標
-    ry_circle: 圓形y座標
-    '''
-    while True:
-        if quadrant == "first":
-            rx_circle = random.randint(100, w / 2)
-            ry_circle = random.randint(100, 300)
-        elif quadrant == "second":
-            rx_circle = random.randint(w / 2 + 100, w - 100)
-            ry_circle = random.randint(100, 300)
-        elif quadrant == "third":
-            rx_circle = random.randint(w / 2 + 100, w - 100)
-            ry_circle = random.randint(100, 300)
-        elif quadrant == "fourth":
-            rx_circle = random.randint(100, w / 2)
-            ry_circle = random.randint(100, 300)
+def generate_rectangle_position():
+    global First_Generate, Circle_quadrant
 
-        # 確保圓形與正方形不重疊
+    if First_Generate:
+        First_Generate = False
+        Rec_quadrant = random.choice(["first", "second", "third", "fourth"])
+    else:
+        if Circle_quadrant == "first":
+            Rec_quadrant = random.choice(["second", "third", "fourth"])
+        elif Circle_quadrant == "second":
+            Rec_quadrant = random.choice(["first", "third", "fourth"])
+        elif Circle_quadrant == "third":
+            Rec_quadrant = random.choice(["first", "second", "fourth"])
+        else:  # Circle_quadrant == "fourth"
+            Rec_quadrant = random.choice(["first", "second", "third"])
+
+    if Rec_quadrant == "first":
+        rx = random.randint(w // 2, w - 80)
+        ry = random.randint(0, h // 2 - 80)
+    elif Rec_quadrant == "second":
+        rx = random.randint(0, w // 2 - 80)
+        ry = random.randint(0, h // 2 - 80)
+    elif Rec_quadrant == "third":
+        rx = random.randint(0, w // 2 - 80)
+        ry = random.randint(h // 2, h - 80)
+    elif Rec_quadrant == "fourth":
+        rx = random.randint(w // 2, w - 80)
+        ry = random.randint(h // 2, h - 80)
+    return rx, ry, Rec_quadrant
+
+def circle_position(rx, ry, Rec_quadrant):
+    global Circle_quadrant
+    while True:
+        if Rec_quadrant == "first":
+            Circle_quadrant = random.choice(["second", "third", "fourth"])
+        elif Rec_quadrant == "second":
+            Circle_quadrant = random.choice(["first", "third", "fourth"])
+        elif Rec_quadrant == "third":
+            Circle_quadrant = random.choice(["first", "second", "fourth"])
+        else:  # Rec_quadrant == "fourth"
+            Circle_quadrant = random.choice(["first", "second", "third"])
+
+        if Circle_quadrant == "first":
+            rx_circle = random.randint(w // 2 + radius, w - radius)
+            ry_circle = random.randint(radius, h // 2 - radius)
+        elif Circle_quadrant == "second":
+            rx_circle = random.randint(radius, w // 2 - radius)
+            ry_circle = random.randint(radius, h // 2 - radius)
+        elif Circle_quadrant == "third":
+            rx_circle = random.randint(radius, w // 2 - radius)
+            ry_circle = random.randint(h // 2 + radius, h - radius)
+        else:  # Circle_quadrant == "fourth"
+            rx_circle = random.randint(w // 2 + radius, w - radius)
+            ry_circle = random.randint(h // 2 + radius, h - radius)
+
         if not check_overlap(rx, ry, rx_circle, ry_circle):
             break
-
-    return (rx_circle, ry_circle)
+    return rx_circle, ry_circle
 
 def check_overlap(rx, ry, rx_circle, ry_circle):
-    #確保圖形之間的距離不超過圓形的半徑加上正方形的邊長的一半，若超過 -> Return False
-
-    square_center_x = rx + 40  # 正方形中心的x座標
-    square_center_y = ry + 40  # 正方形中心的y座標
+    square_center_x = rx + 40
+    square_center_y = ry + 40
     distance = math.sqrt((square_center_x - rx_circle) ** 2 + (square_center_y - ry_circle) ** 2)
-    if distance < radius + 40:  # 圓形半徑 + 正方形一半邊長
+    if distance < radius + 40:
         return True
     return False
 
@@ -82,15 +112,15 @@ def countdown():
         cv2.imshow('Mediapipe_Game', img)
         cv2.waitKey(1000)
 
-mp_drawing = mp.solutions.drawing_utils  # mediapipe 繪圖方法
-mp_drawing_styles = mp.solutions.drawing_styles  # mediapipe 繪圖樣式
-mp_hands = mp.solutions.hands  # mediapipe 偵測手掌方法
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+mp_hands = mp.solutions.hands
 
 cap = cv2.VideoCapture(0)
-cv2.namedWindow('Mediapipe_Game', cv2.WINDOW_NORMAL)  # 設定視窗可調整大小
+cv2.namedWindow('Mediapipe_Game', cv2.WINDOW_NORMAL)
 
 def game_loop():
-    global score, startTime, quadrant, rx, ry, run_rectangle, run_circle, w, h
+    global score, startTime, rx, ry, run_rectangle, run_circle, w, h, Circle_quadrant
     score = 0
     startTime = time.time()
 
@@ -117,13 +147,11 @@ def game_loop():
 
             if run_rectangle:
                 run_rectangle = False
-                rx = random.randint(100, 400)
-                ry = random.randint(100, 300)
+                rx, ry, Rec_quadrant = generate_rectangle_position()
 
             if run_circle:
                 run_circle = False
-                quadrant = find_quadrant(rx, ry)
-                rx_circle, ry_circle = circle_position(rx, ry)
+                rx_circle, ry_circle = circle_position(rx, ry, Rec_quadrant)
 
             img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             results = hands.process(img2)
@@ -134,11 +162,11 @@ def game_loop():
                     if rx < x < rx + 80 and ry < y < ry + 80:
                         run_rectangle = True
                         score += 10
-                        print(score)
+                        print(f"Now Score:{score}")
                     if rx_circle - radius < x < rx_circle + radius and ry_circle - radius < y < ry_circle + radius:
                         run_circle = True
                         score += 30
-                        print(score)
+                        print(f"Now Score:{score}")
                     mp_drawing.draw_landmarks(
                         img,
                         hand_landmarks,
@@ -162,7 +190,7 @@ def game_loop():
                 cv2.imshow('Mediapipe_Game', img)
                 if cv2.waitKey(5) & 0xFF == ord('q'):
                     break
-                cv2.waitKey(3000)  # 結束循環，回到選單
+                cv2.waitKey(3000)
                 return
 
             cv2.imshow('Mediapipe_Game', img)
@@ -172,23 +200,21 @@ def game_loop():
 def main_menu():
     flash = True
     while True:
-        img = cv2.imread('background.png')  # 加載您提供的圖片
+        img = cv2.imread('background.png')
         text = "Press 's' to Start"
         font = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 1
         thickness = 2
         text_size = cv2.getTextSize(text, font, fontScale, thickness)[0]
         text_x = (img.shape[1] - text_size[0]) // 2
-        text_y = (text_size[1]) // 2 + 50  # 這裡調整文字的 y 坐標
-        #print(text_size,img.shape)
+        text_y = (text_size[1]) // 2 + 50
         if flash:
             cv2.putText(img, text, (text_x, text_y), font, fontScale, RED, thickness, cv2.LINE_AA)
-            # 畫一個框框包圍文字
             cv2.rectangle(img, (text_x - 10, text_y - text_size[1] - 10), (text_x + text_size[0] + 10, text_y + 10), RED, thickness)
 
         flash = not flash
         cv2.imshow('Mediapipe_Game', img)
-        key = cv2.waitKey(500)  # 設置閃爍間隔
+        key = cv2.waitKey(500)
         if key == ord('s'):
             countdown()
             game_loop()
