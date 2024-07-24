@@ -1,3 +1,7 @@
+
+
+
+
 import cv2
 import mediapipe as mp
 import random
@@ -39,12 +43,31 @@ def circle_position():
         ry_circle = random.randint(100, 300)
     return (rx_circle, ry_circle)
 
+def countdown():
+    for i in range(3, 0, -1):
+        ret, img = cap.read()
+        img = cv2.flip(img, 1)
+        if not ret:
+            print("Cannot receive frame")
+            break
+        size = img.shape
+        w = size[1]
+        h = size[0]
+        text = str(i)
+        text_size = cv2.getTextSize(text, font, 5, thickness)[0]
+        text_x = (w - text_size[0]) // 2
+        text_y = (h + text_size[1]) // 2
+        img = cv2.putText(img, text, (text_x, text_y), font, 5, RED, thickness, cv2.LINE_AA)
+        cv2.imshow('Mediapipe_Game', img)
+        cv2.waitKey(1000)
+
 mp_drawing = mp.solutions.drawing_utils  # mediapipe 繪圖方法
 mp_drawing_styles = mp.solutions.drawing_styles  # mediapipe 繪圖樣式
 mp_hands = mp.solutions.hands  # mediapipe 偵測手掌方法
 
 cap = cv2.VideoCapture(0)
 cv2.namedWindow('Mediapipe_Game', cv2.WINDOW_NORMAL)  # 設定視窗可調整大小
+
 
 def game_loop():
     global score, startTime, quadrant, rx, ry, run_rectangle, run_circle, w, h
@@ -137,7 +160,7 @@ def main_menu():
         text_size = cv2.getTextSize(text, font, fontScale, thickness)[0]
         text_x = (img.shape[1] - text_size[0]) // 2
         text_y = (text_size[1]) // 2 + 50  # 這裡調整文字的 y 坐標
-        print(text_size,img.shape)
+        #print(text_size,img.shape)
         if flash:
             cv2.putText(img, text, (text_x, text_y), font, fontScale, RED, thickness, cv2.LINE_AA)
             # 畫一個框框包圍文字
@@ -147,6 +170,7 @@ def main_menu():
         cv2.imshow('Mediapipe_Game', img)
         key = cv2.waitKey(500)  # 設置閃爍間隔
         if key == ord('s'):
+            countdown()
             game_loop()
         elif key == ord('q'):
             break
