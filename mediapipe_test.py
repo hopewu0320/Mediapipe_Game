@@ -46,6 +46,8 @@ mp_hands = mp.solutions.hands                    # mediapipe 偵測手掌方法
 cap = cv2.VideoCapture(0)
 startTime = time.time()
 
+cv2.namedWindow('Mediapipe_Game', cv2.WINDOW_NORMAL)  # 設定視窗可調整大小
+
 # mediapipe 啟用偵測手掌
 with mp_hands.Hands(
     model_complexity=0,
