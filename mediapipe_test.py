@@ -127,6 +127,7 @@ def game_loop():
                 break
 
 def main_menu():
+    flash = True
     while True:
         img = cv2.imread('background.png')  # 加載您提供的圖片
         text = "Press 's' to Start"
@@ -136,12 +137,15 @@ def main_menu():
         text_size = cv2.getTextSize(text, font, fontScale, thickness)[0]
         text_x = (img.shape[1] - text_size[0]) // 2
         text_y = (text_size[1]) // 2 + 50  # 這裡調整文字的 y 坐標
-        cv2.putText(img, text, (text_x, text_y), font, fontScale, RED, thickness, cv2.LINE_AA)
-        # 畫一個框框包圍文字
-        cv2.rectangle(img, (text_x - 10, text_y - text_size[1] - 10), (text_x + text_size[0] + 10, text_y + 10), RED, thickness)
+        print(text_size,img.shape)
+        if flash:
+            cv2.putText(img, text, (text_x, text_y), font, fontScale, RED, thickness, cv2.LINE_AA)
+            # 畫一個框框包圍文字
+            cv2.rectangle(img, (text_x - 10, text_y - text_size[1] - 10), (text_x + text_size[0] + 10, text_y + 10), RED, thickness)
 
+        flash = not flash
         cv2.imshow('Mediapipe_Game', img)
-        key = cv2.waitKey(0)
+        key = cv2.waitKey(500)  # 設置閃爍間隔
         if key == ord('s'):
             game_loop()
         elif key == ord('q'):
