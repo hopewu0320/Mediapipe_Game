@@ -1,11 +1,8 @@
-
-
-
-
 import cv2
 import mediapipe as mp
 import random
 import time
+import math
 
 radius = 30
 RED = (0, 0, 255)
@@ -28,20 +25,44 @@ def find_quadrant(x, y):
         quadrant = "fourth"
     return quadrant
 
-def circle_position():
-    if quadrant == "first":
-        rx_circle = random.randint(100, w / 2)
-        ry_circle = random.randint(100, 300)
-    elif quadrant == "second":
-        rx_circle = random.randint(w / 2 + 100, w - 100)
-        ry_circle = random.randint(100, 300)
-    elif quadrant == "third":
-        rx_circle = random.randint(w / 2 + 100, w - 100)
-        ry_circle = random.randint(100, 300)
-    elif quadrant == "fourth":
-        rx_circle = random.randint(100, w / 2)
-        ry_circle = random.randint(100, 300)
+def circle_position(rx, ry):
+    '''
+    Input:
+    rx: 正方形x座標
+    ry: 正方形x座標
+    Output:
+    rx_circle: 圓形x座標
+    ry_circle: 圓形y座標
+    '''
+    while True:
+        if quadrant == "first":
+            rx_circle = random.randint(100, w / 2)
+            ry_circle = random.randint(100, 300)
+        elif quadrant == "second":
+            rx_circle = random.randint(w / 2 + 100, w - 100)
+            ry_circle = random.randint(100, 300)
+        elif quadrant == "third":
+            rx_circle = random.randint(w / 2 + 100, w - 100)
+            ry_circle = random.randint(100, 300)
+        elif quadrant == "fourth":
+            rx_circle = random.randint(100, w / 2)
+            ry_circle = random.randint(100, 300)
+
+        # 確保圓形與正方形不重疊
+        if not check_overlap(rx, ry, rx_circle, ry_circle):
+            break
+
     return (rx_circle, ry_circle)
+
+def check_overlap(rx, ry, rx_circle, ry_circle):
+    #確保圖形之間的距離不超過圓形的半徑加上正方形的邊長的一半，若超過 -> Return False
+
+    square_center_x = rx + 40  # 正方形中心的x座標
+    square_center_y = ry + 40  # 正方形中心的y座標
+    distance = math.sqrt((square_center_x - rx_circle) ** 2 + (square_center_y - ry_circle) ** 2)
+    if distance < radius + 40:  # 圓形半徑 + 正方形一半邊長
+        return True
+    return False
 
 def countdown():
     for i in range(3, 0, -1):
@@ -67,7 +88,6 @@ mp_hands = mp.solutions.hands  # mediapipe 偵測手掌方法
 
 cap = cv2.VideoCapture(0)
 cv2.namedWindow('Mediapipe_Game', cv2.WINDOW_NORMAL)  # 設定視窗可調整大小
-
 
 def game_loop():
     global score, startTime, quadrant, rx, ry, run_rectangle, run_circle, w, h
@@ -103,7 +123,7 @@ def game_loop():
             if run_circle:
                 run_circle = False
                 quadrant = find_quadrant(rx, ry)
-                rx_circle, ry_circle = circle_position()
+                rx_circle, ry_circle = circle_position(rx, ry)
 
             img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             results = hands.process(img2)
@@ -142,7 +162,7 @@ def game_loop():
                 cv2.imshow('Mediapipe_Game', img)
                 if cv2.waitKey(5) & 0xFF == ord('q'):
                     break
-                cv2.waitKey(3000)  # 顯示 "T: End" 3 秒鐘
+                cv2.waitKey(3000)  # 結束循環，回到選單
                 return
 
             cv2.imshow('Mediapipe_Game', img)
