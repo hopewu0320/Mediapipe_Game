@@ -6,6 +6,7 @@ import math
 
 radius = 30
 RED = (0, 0, 255)
+opposite_RED = (0,255,0)
 score = 0
 org = (30, 30)
 time_org = (500, 30)
@@ -14,7 +15,9 @@ thickness = 2
 font = cv2.FONT_HERSHEY_SIMPLEX
 countTime = 300  # 30 seconds to go
 
-First_Generate  = True
+First_Generate = True
+mode1_flag = False
+mode2_flag = False
 
 def find_quadrant(x, y):
     if x >= w / 2 and y < h / 2:
@@ -119,7 +122,7 @@ mp_hands = mp.solutions.hands
 cap = cv2.VideoCapture(0)
 cv2.namedWindow('Mediapipe_Game', cv2.WINDOW_NORMAL)
 
-def game_loop():
+def game_loop1():
     global score, startTime, rx, ry, run_rectangle, run_circle, w, h, Circle_quadrant
     score = 0
     startTime = time.time()
@@ -144,7 +147,7 @@ def game_loop():
             size = img.shape
             w = size[1]
             h = size[0]
-
+            
             if run_rectangle:
                 run_rectangle = False
                 rx, ry, Rec_quadrant = generate_rectangle_position()
@@ -156,9 +159,11 @@ def game_loop():
             img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             results = hands.process(img2)
             if results.multi_hand_landmarks:
+                
                 for hand_landmarks in results.multi_hand_landmarks:
                     x = hand_landmarks.landmark[7].x * w
                     y = hand_landmarks.landmark[7].y * h
+                    
                     if rx < x < rx + 80 and ry < y < ry + 80:
                         run_rectangle = True
                         score += 10
@@ -197,27 +202,140 @@ def game_loop():
             if cv2.waitKey(5) & 0xFF == ord('q'):
                 break
 
+def game_loop2():
+    global score, startTime, rx, ry, run_rectangle, run_circle, w, h, Circle_quadrant
+    score = 0
+    startTime = time.time()
+    
+    with mp_hands.Hands(
+            model_complexity=0,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.8) as hands:
+
+        if not cap.isOpened():
+            print("Cannot open camera")
+            exit()
+
+        run_rectangle = True
+        run_circle = True
+        while True:
+            ret, img = cap.read()
+            img = cv2.flip(img, 1)
+            if not ret:
+                print("Cannot receive frame")
+                break
+            size = img.shape
+            w = size[1]
+            h = size[0]
+            
+            if run_rectangle:
+                run_rectangle = False
+                rx, ry, Rec_quadrant = generate_rectangle_position()
+
+            if run_circle:
+                run_circle = False
+                rx_circle, ry_circle = circle_position(rx, ry, Rec_quadrant)
+
+            img2 = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            results = hands.process(img2)
+            if results.multi_hand_landmarks:
+                
+                for hand_landmarks in results.multi_hand_landmarks:
+                    x = hand_landmarks.landmark[7].x * w
+                    y = hand_landmarks.landmark[7].y * h
+                    
+                    if rx < x < rx + 80 and ry < y < ry + 80:
+                        run_rectangle = True
+                        score += 10
+                        print(f"Now Score:{score}")
+                    if rx_circle - radius < x < rx_circle + radius and ry_circle - radius < y < ry_circle + radius:
+                        run_circle = True
+                        score += 30
+                        print(f"Now Score:{score}")
+                    mp_drawing.draw_landmarks(
+                        img,
+                        hand_landmarks,
+                        mp_hands.HAND_CONNECTIONS,
+                        mp_drawing_styles.get_default_hand_landmarks_style(),
+                        mp_drawing_styles.get_default_hand_connections_style())
+
+            currentTime = time.time()
+            elapsedTime = currentTime - startTime
+            remainingTime = countTime - elapsedTime
+
+            cv2.circle(img, (rx_circle, ry_circle), radius, RED, thickness)
+            cv2.rectangle(img, (rx, ry), (rx + 80, ry + 80), RED, 5)
+
+            if not run_circle:
+                background_color_circle = img[ry_circle, rx_circle].tolist()  # 獲取背景顏色
+                cv2.circle(img, (rx_circle, ry_circle), radius, background_color_circle, -1)
+
+            if not run_rectangle:
+                background_color = img[ry + 40, rx + 40].tolist()  # 獲取背景顏色
+                cv2.rectangle(img, (rx, ry), (rx + 80, ry + 80), background_color, -1)
+
+            
+            text = f'Score:{score}'
+            img = cv2.putText(img, text, org, font, fontScale, RED, thickness, cv2.LINE_AA)
+
+            if remainingTime >= 0.0:
+                img = cv2.putText(img, "T:{:.2f}".format(remainingTime), time_org, font, fontScale, RED, thickness, cv2.LINE_AA)
+            else:
+                img = cv2.putText(img, "T: End", time_org, font, fontScale, RED, thickness, cv2.LINE_AA)
+                cv2.imshow('Mediapipe_Game', img)
+                cv2.waitKey(3000)
+                return
+
+            cv2.imshow('Mediapipe_Game', img)
+            if cv2.waitKey(5) & 0xFF == ord('q'):
+                break
+
+
+def mode1():
+    print("Mode 1 selected")
+    mode1_flag = True
+    game_loop1()
+    
+
+def mode2():
+    # 閃爍一下，隨即消失，碰觸後得分，並發出"circle" or "square"的聲音
+    print("Mode 2 selected")
+    mode2_flag = True
+    game_loop2()
+
 def main_menu():
     flash = True
     while True:
         img = cv2.imread('background.png')
-        text = "Press 's' to Start"
+        text1 = "Press '1' for Mode 1"
+        text2 = "Press '2' for Mode 2"
         font = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 1
         thickness = 2
-        text_size = cv2.getTextSize(text, font, fontScale, thickness)[0]
-        text_x = (img.shape[1] - text_size[0]) // 2
-        text_y = (text_size[1]) // 2 + 50
+
+        text1_size = cv2.getTextSize(text1, font, fontScale, thickness)[0]
+        text2_size = cv2.getTextSize(text2, font, fontScale, thickness)[0]
+
+        text1_x = (img.shape[1] - text1_size[0]) // 2
+        text1_y = (img.shape[0] // 2) - 50
+        text2_x = (img.shape[1] - text2_size[0]) // 2
+        text2_y = (img.shape[0] // 2) + 50
+
         if flash:
-            cv2.putText(img, text, (text_x, text_y), font, fontScale, RED, thickness, cv2.LINE_AA)
-            cv2.rectangle(img, (text_x - 10, text_y - text_size[1] - 10), (text_x + text_size[0] + 10, text_y + 10), RED, thickness)
+            cv2.putText(img, text1, (text1_x, text1_y), font, fontScale, RED, thickness, cv2.LINE_AA)
+            cv2.putText(img, text2, (text2_x, text2_y), font, fontScale, RED, thickness, cv2.LINE_AA)
+            cv2.rectangle(img, (text1_x - 10, text1_y - text1_size[1] - 10), (text1_x + text1_size[0] + 10, text1_y + 10), RED, thickness)
+            cv2.rectangle(img, (text2_x - 10, text2_y - text2_size[1] - 10), (text2_x + text2_size[0] + 10, text2_y + 10), RED, thickness)
 
         flash = not flash
         cv2.imshow('Mediapipe_Game', img)
         key = cv2.waitKey(500)
-        if key == ord('s'):
+        if key == ord('1'):
             countdown()
-            game_loop()
+            mode1()
+        elif key == ord('2'):
+            countdown()
+            mode2()
         elif key == ord('q'):
             break
 
